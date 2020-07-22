@@ -48,17 +48,22 @@ Param
 ) 
 #>
 
-#<#
+<#
 ## For debugging uncomment
 $ErrorActionPreference = 'Stop'
 $VerbosePreference = 'continue'
-$DebugPreference = 'SilentlyContinue'Set-StrictMode -Version Latest#>
+$DebugPreference = 'SilentlyContinue'
+Set-StrictMode -Version Latest
+#>
+
 function Make-NameWithSafeCharacters ([string]$string) {
     ###### TODO need to replace the folder path characters that might be illegal
     #list of illegal characters : '/', '\', ':', '*','?','"','<','>','|','{','}'
     $returnString = (($string).Replace("/","-")).Replace("\","-").Replace(":","-").Replace("*","-").Replace("?","-").Replace("`"","-").Replace("<","-").Replace(">","-").Replace("|","-").Replace("{","-").Replace("}","-")
     return $returnString
-}
+}
+
+
     
 #Create ControlUp structure object for synchronizing
 class ControlUpObject{
