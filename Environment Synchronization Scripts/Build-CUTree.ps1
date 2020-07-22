@@ -87,10 +87,14 @@
                     > Executing Computer Object Adds. Batch 1/1
                     > Execution Time: PREVIEW MODE
 
-    .PARAMETER PreviewOutputPath <path to log file>
+    .PARAMETER LogFile <path to log file>
         Specifies that all output will be saved to a log file. Individual operations will also be saved to the log file. The operations are saved in
         such a way that you should be able to copy-paste them into a powershell prompt that has the ControlUp Powershell modules loaded and they should
         be executable.  Use this for testing individual operations to validate it will work as you expect.
+
+    .PARAMETER SiteId <string>
+        An optional parameter to specify which site you want the machine object assigned. By default, the site ID is "Default". Enter the name of the site
+        to assign the object
 
     .EXAMPLE
         Build-CUTree -ExternalTree $WVDEnvironment -CURootFolder "VDI_and_SBC\WVD" -Preview -Delete -PreviewOutputPath C:\temp\sync.log
@@ -147,9 +151,15 @@ function Build-CUTree {
 
         [Parameter(
     	    Mandatory=$false,
-    	    HelpMessage='Save the preview to the path specified'
+    	    HelpMessage='Save a log file'
 	    )]
-	    [string] $PreviewOutputPath,
+	    [string] $LogFile,
+
+        [Parameter(
+    	    Mandatory=$false,
+    	    HelpMessage='ControlUp Site Id to assign the machine object'
+	    )]
+	    [string] $SiteId,
 
         [Parameter(
     	    Mandatory=$false,
@@ -224,8 +234,8 @@ function Build-CUTree {
             }
         
             $date = Get-Date -Format G
-            if ($Global:PreviewOutputPath) {
-                Write-Output "$date | $LogType | $Msg"  | Out-file $($Global:PreviewOutputPath) -Append
+            if ($Global:LogFile) {
+                Write-Output "$date | $LogType | $Msg"  | Out-file $($Global:LogFile) -Append
             }
             
 
@@ -287,13 +297,12 @@ function Build-CUTree {
         }
 
         #attempt to setup the log file
-        if ($PSBoundParameters.ContainsKey("PreviewOutputPath")) {
-            $Preview = $true
-            $Global:PreviewOutputPath = $PSBoundParameters.PreviewOutputPath
-            Write-Host "Saving Output to: $Global:PreviewOutputPath"
-            if (-not(Test-Path $($PSBoundParameters.PreviewOutputPath))) {
+        if ($PSBoundParameters.ContainsKey("LogFile")) {
+            $Global:LogFile = $PSBoundParameters.LogFile
+            Write-Host "Saving Output to: $Global:LogFile"
+            if (-not(Test-Path $($PSBoundParameters.LogFile))) {
                 Write-CULog -Msg "Creating Log File" #Attempt to create the file
-                if (-not(Test-Path $($PSBoundParameters.PreviewOutputPath))) {
+                if (-not(Test-Path $($PSBoundParameters.LogFile))) {
                     Write-Error "Unable to create the report file" -ErrorAction Stop
                 }
             } else {
@@ -309,7 +318,7 @@ function Build-CUTree {
                 }
             }
         } else {
-            $Global:PreviewOutputPath = $false
+            $Global:LogFile = $false
         }
     }
 
@@ -332,6 +341,16 @@ function Build-CUTree {
             Write-CULog -Msg 'The required ControlUp PowerShell module was not found or could not be loaded. Please make sure this is a ControlUp Monitor machine.' -ShowConsole -Type E
         }
         #endregion
+
+
+        #region validate SiteId parameter
+        if ($PSBoundParameters.ContainsKey("SiteId")) {
+            Write-CULog -Msg "Assigning resources to specific site: $SiteId" -ShowConsole
+            $Sites = Get-CUSites
+            $SiteIdGUID = ($Sites.Where{$_.Name -eq $SiteId}).Id
+            Write-CULog -Msg "SiteId GUID: $SiteIdGUID" -ShowConsole -SubMsg
+            $SiteIdParam = @{SiteId = $SiteIdGUID}
+        }
 
 
         #region Retrieve ControlUp folder structure
@@ -526,8 +545,13 @@ function Build-CUTree {
                         $ComputersAddCount = 0
                         $ComputersAddBatch = New-CUBatchUpdate
                     }
-    	        Add-CUComputer -Domain $ExtComputer.Domain -Name $ExtComputer.Name -FolderPath "$($ExtComputer.FolderPath)" -Batch $ComputersAddBatch
-                $MachinesToAdd.Add("Add-CUComputer -Domain $($ExtComputer.Domain) -Name $($ExtComputer.Name) -FolderPath `"$($ExtComputer.FolderPath)`"")
+                
+    	        Add-CUComputer -Domain $ExtComputer.Domain -Name $ExtComputer.Name -FolderPath "$($ExtComputer.FolderPath)" -Batch $ComputersAddBatch @SiteIdParam
+                if ($PSBoundParameters.ContainsKey("SiteId")) {
+                    $MachinesToAdd.Add("Add-CUComputer -Domain $($ExtComputer.Domain) -Name $($ExtComputer.Name) -FolderPath `"$($ExtComputer.FolderPath)`" -SiteId $SiteIdGUID")
+                } else {
+                    $MachinesToAdd.Add("Add-CUComputer -Domain $($ExtComputer.Domain) -Name $($ExtComputer.Name) -FolderPath `"$($ExtComputer.FolderPath)`"")
+                }
                 $ComputersAddCount = $ComputersAddCount+1
 	        }
         }
@@ -540,7 +564,7 @@ function Build-CUTree {
         #we'll output the statistics at the end -- also helps with debugging
         $FoldersToRemove = New-Object System.Collections.Generic.List[PSObject]
         
-        if ($Delete -or $Preview) {
+        if ($Delete) {
             Write-CULog "Determining Objects to be Removed" -ShowConsole
 	        # Build batch for folders which are in ControlUp but not in the external source
             if ($CUFolders.where{$_.Path -like "$("$OrganizationName\$CURootFolder")\*"}.count -eq 0) { ## Get CUFolders filtered to targetted sync path

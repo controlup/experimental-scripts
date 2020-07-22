@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Creates the folder structure and adds/removes or moves machines into the structure.
 .DESCRIPTION
@@ -68,7 +68,15 @@ Param
         HelpMessage='Enter a path to generate a log file of the proposed changes'
     )]
     [ValidateNotNullOrEmpty()]
-    [string] $PreviewOutputPath
+    [string] $LogFile,
+
+      [Parameter(
+        Position=4, 
+        Mandatory=$false, 
+        HelpMessage='Enter a ControlUp Site'
+    )]
+    [ValidateNotNullOrEmpty()]
+    [string] $Site
 ) 
 
 
@@ -78,16 +86,13 @@ $ErrorActionPreference = 'Stop'
 $VerbosePreference = 'continue'
 $DebugPreference = 'SilentlyContinue'
 Set-StrictMode -Version Latest
-#>
-
+#>
 function Make-NameWithSafeCharacters ([string]$string) {
     ###### TODO need to replace the folder path characters that might be illegal
     #list of illegal characters : '/', '\', ':', '*','?','"','<','>','|','{','}'
     $returnString = (($string).Replace("/","-")).Replace("\","-").Replace(":","-").Replace("*","-").Replace("?","-").Replace("`"","-").Replace("<","-").Replace(">","-").Replace("|","-").Replace("{","-").Replace("}","-")
     return $returnString
-}
-
-
+}
     
 #Create ControlUp structure object for synchronizing
 class ControlUpObject{
@@ -211,11 +216,18 @@ if ($Delete) {
     $BuildCUTreeParams.Add("Delete",$true)
 }
 
-if ($PreviewOutputPath){
-    $BuildCUTreeParams.Add("PreviewOutputPath",$PreviewOutputPath)
+if ($LogFile){
+    $BuildCUTreeParams.Add("LogFile",$LogFile)
+}
+
+if ($Site){
+    $BuildCUTreeParams.Add("SiteId",$Site)
 }
 
 Build-CUTree -ExternalTree $WVDEnvironment @BuildCUTreeParams
 
 
 #endregion WVD
+
+
+
