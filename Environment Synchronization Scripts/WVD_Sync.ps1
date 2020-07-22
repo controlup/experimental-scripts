@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     Creates the folder structure and adds/removes or moves machines into the structure.
 .DESCRIPTION
@@ -34,7 +34,7 @@
     Copyright (c) cognition IT. All rights reserved.
 #>
 
-<#
+
 [CmdletBinding()]
 Param
 (
@@ -44,9 +44,33 @@ Param
         HelpMessage='Enter a subfolder to save your WVD tree'
     )]
     [ValidateNotNullOrEmpty()]
-    [string] $folderPath
+    [string] $folderPath,
+
+    [Parameter(
+        Position=1, 
+        Mandatory=$false, 
+        HelpMessage='Preview the changes'
+    )]
+    [ValidateNotNullOrEmpty()]
+    [switch] $Preview,
+
+    [Parameter(
+        Position=2, 
+        Mandatory=$false, 
+        HelpMessage='Execute removal operations. When combined with preview it will only display the proposed changes'
+    )]
+    [ValidateNotNullOrEmpty()]
+    [switch] $Delete,
+
+    [Parameter(
+        Position=3, 
+        Mandatory=$false, 
+        HelpMessage='Enter a path to generate a log file of the proposed changes'
+    )]
+    [ValidateNotNullOrEmpty()]
+    [string] $PreviewOutputPath
 ) 
-#>
+
 
 <#
 ## For debugging uncomment
@@ -175,10 +199,23 @@ Returns an object like so:
     WVDSH-1                Pay-As-You-Go Dev-Test\WVDHP         Computer AcmeOnAzure.onmicrosoft.com WVD SessionHost
 #>
 
-Build-CUTree -ExternalTree $WVDEnvironment -CURootFolder "VDI_and_SBC\WVD" -delete
+$BuildCUTreeParams = @{
+    CURootFolder = $folderPath
+}
+
+if ($Preview) {
+    $BuildCUTreeParams.Add("Preview",$true)
+}
+
+if ($Delete) {
+    $BuildCUTreeParams.Add("Delete",$true)
+}
+
+if ($PreviewOutputPath){
+    $BuildCUTreeParams.Add("PreviewOutputPath",$PreviewOutputPath)
+}
+
+Build-CUTree -ExternalTree $WVDEnvironment @BuildCUTreeParams
 
 
 #endregion WVD
-
-
-
