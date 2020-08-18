@@ -683,7 +683,6 @@ function New-CUTeamsMessage()
     ]
     }
 "@
-    write-output $teamsbody
     # This section will send the API call using Powershell to Slack and Slack will process the request and send the notification
     Invoke-RestMethod -uri $TeamsIncomingWebhookUri -Method Post -body $teamsbody -ContentType 'application/json'
 
