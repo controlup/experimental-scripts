@@ -11,6 +11,7 @@
     Samuel Legrand - 14/08/20 - Original code
     Samuel Legrand - 14/08/20 - Standardizing script, based on the ControlUp Scripting Standards (version 0.2)
     Samuel Legrand - 18/08/20 - Remove debug output on New-CUTeamsMessage
+    Samuel Legrand - 19/08/20 - Update the password management for Component and change it for New-CUServiceNowIncident
 .LINK
     
 .COMPONENT
