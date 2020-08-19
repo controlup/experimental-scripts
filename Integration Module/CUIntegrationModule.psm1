@@ -10,6 +10,7 @@
 .MODIFICATION_HISTORY
     Samuel Legrand - 14/08/20 - Original code
     Samuel Legrand - 14/08/20 - Standardizing script, based on the ControlUp Scripting Standards (version 0.2)
+    Samuel Legrand - 18/08/20 - Remove debug output on New-CUTeamsMessage
 .LINK
     
 .COMPONENT
@@ -20,17 +21,22 @@
         Set-CUSBAConfigItemValue - This function sets a paramater value for a specific "Component"
         Remove-CUSBAConfigItemValue - This function removes a parameter value for a specific "Component"
         Get-CUSBAConfigItemValue - This function returns the value of a parameter for a specific "Component"
+        Get-CUSBAConfigItemCredentials - This function returns the Credentials for a specific "Component"
+        Set-CUSBAConfigItemCredentials - This function sets the Credentials for a specific "Component"
+        
     Integration functions (Used to integrate with other solutions)
         New-CUServiceNowIncident - This function creates a Service Now Incident
         New-CUSlackMessage - This function creates a Slack message
         New-CUTeamsMessage - This function creates a Teams message
 
 .NOTES
-    Version:        1.0
+    Version:        1.2
     Author:         Samuel Legrand
     Creation Date:  2020-08-14
-    Updated:        2020-08-14
-                    Standardized the function, based on the ControlUp Standards (v1.0)
+    Updated:        2020-08-18
+                    Remove debug output on New-CUTeamsMessage
+                    2020-08-19
+                    Update the password management for Component and change it for New-CUServiceNowIncident
     Purpose:        Script Based Action, created for ControlUp Monitoring
         
     Copyright (c) All rights reserved.
@@ -351,6 +357,120 @@ function Get-CUSBAConfigItemValue()
     return $result
 }
 
+function Set-CUSBAConfigItemCredentials()
+{
+    <#
+    .SYNOPSIS
+        Set Credentials for a specific "Component"
+    .DESCRIPTION
+        Set Credentials for a specific "Component" into the registry of a ControlUp Monitor
+    .CONTEXT
+        ControlUp Monitor Server
+    .EXAMPLE
+        Set-CUSBAConfigItemCredentials -Component ServiceNow -Parameter Credentials
+    .MODIFICATION_HISTORY
+        Samuel Legrand - 19/08/20 - Original code
+    .LINK
+        
+    .COMPONENT
+        
+    .NOTES
+        Version:        1.0
+        Author:         Samuel Legrand
+        Creation Date:  2020-08-19
+        Updated:        
+
+        Purpose:        Script Based Action, created for ControlUp Monitoring
+            
+        Copyright (c) All rights reserved.
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(
+            Position=0, 
+            Mandatory=$true, 
+            HelpMessage='Enter the name of the component you want to set credentials'
+        )]
+        [ValidateNotNullOrEmpty()]
+        [string] $Component,
+        [Parameter(
+            Position=1, 
+            Mandatory=$true, 
+            HelpMessage='Enter the name of the parameter'
+        )]
+        [ValidateNotNullOrEmpty()]
+        [string] $Parameter
+    )
+    if (Test-Path HKLM:\SOFTWARE\Smart-X\ControlUp\SBASettings\$Component)
+    {
+        $PSCred = Get-Credential
+        $PSCred | Export-Clixml -Path $ENV:TEMP\temp.xml
+        $Value = [Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes($(get-content $ENV:TEMP\temp.xml)))
+        $result = Set-ItemProperty -Path HKLM:\SOFTWARE\Smart-X\ControlUp\SBASettings\$Component -Name $Parameter -Value $Value
+    }
+    else {
+        $result = "There is no configuration item for $Component, you first need to create it using New-CUSBAConfigItem"
+    }
+    return $result
+}
+
+function Get-CUSBAConfigItemCredentials()
+{
+    <#
+    .SYNOPSIS
+        Get Credentials for a specific "Component"
+    .DESCRIPTION
+        Get Credentials for a specific "Component" from the registry of a ControlUp Monitor
+    .CONTEXT
+        ControlUp Monitor Server
+    .EXAMPLE
+        Get-CUSBAConfigItemCredentials -Component ServiceNow -Parameter Credentials
+    .MODIFICATION_HISTORY
+        Samuel Legrand - 19/08/20 - Original code
+    .LINK
+        
+    .COMPONENT
+        
+    .NOTES
+        Version:        1.0
+        Author:         Samuel Legrand
+        Creation Date:  2020-08-19
+        Updated:        
+
+        Purpose:        Script Based Action, created for ControlUp Monitoring
+            
+        Copyright (c) All rights reserved.
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(
+            Position=0, 
+            Mandatory=$true, 
+            HelpMessage='Enter the name of the component you want to get credentials'
+        )]
+        [ValidateNotNullOrEmpty()]
+        [string] $Component,
+        [Parameter(
+            Position=1, 
+            Mandatory=$true, 
+            HelpMessage='Enter the name of the parameter'
+        )]
+        [ValidateNotNullOrEmpty()]
+        [string] $Parameter
+    )
+    if (Test-Path HKLM:\SOFTWARE\Smart-X\ControlUp\SBASettings\$Component)
+    {
+        $value = Get-ItemPropertyValue -Path HKLM:\SOFTWARE\Smart-X\ControlUp\SBASettings\$Component -Name $Parameter
+        $Content = [System.Text.Encoding]::Unicode.GetString([System.Convert]::FromBase64String($value))
+        $content |out-file $ENV:TEMP\temp.xml -Force
+        $result = Import-Clixml $env:temp\temp.xml
+    }
+    else {
+        $result = "There is no configuration item for $Component"
+    }
+    return $result
+}
+
 function New-CUServiceNowIncident()
 {
     <#
@@ -370,11 +490,13 @@ function New-CUServiceNowIncident()
     .COMPONENT
         
     .NOTES
-        Version:        1.0
+        Version:        1.1
         Author:         Samuel Legrand
         Creation Date:  2020-08-14
         Updated:        2020-08-14
                         Standardized the function, based on the ControlUp Standards (v1.0)
+                        2020-08-19
+                        Change the password management to a PSCredentials object
         Purpose:        Script Based Action, created for ControlUp Monitoring
             
         Copyright (c) All rights reserved.
@@ -425,8 +547,9 @@ function New-CUServiceNowIncident()
         [string] $Description
     )
     $fqdn = Get-CUSBAConfigItemValue -component $Component -Parameter FQDN
-    $user = Get-CUSBAConfigItemValue -component $Component -Parameter User
-    $pass = Get-CUSBAConfigItemValue -component $Component -Parameter Password
+    $credential = Get-CUSBAConfigItemCredentials -Component $Component -Parameter Credentials
+    $user = $credential.GetNetworkCredential().username
+    $pass = $credential.GetNetworkCredential().password
     
     $JsonDescription = ($Description | Out-String | ConvertTo-Json)
     $body = "{ 'assignment_group':'$AssignmentGroup','short_description':'$ShortDescription', 'caller_id':'$CallerId', 'cmdb_ci':'$CmdbCi', 'description':$JsonDescription}"
