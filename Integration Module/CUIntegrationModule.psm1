@@ -12,6 +12,7 @@
     Samuel Legrand - 14/08/20 - Standardizing script, based on the ControlUp Scripting Standards (version 0.2)
     Samuel Legrand - 18/08/20 - Remove debug output on New-CUTeamsMessage
     Samuel Legrand - 19/08/20 - Update the password management for Component and change it for New-CUServiceNowIncident
+    Samuel Legrand - 02/09/20 - Add Support for proxy settings for Slack, Teams and ServiceNow integrations
 .LINK
     
 .COMPONENT
@@ -350,7 +351,12 @@ function Get-CUSBAConfigItemValue()
     )
     if (Test-Path HKLM:\SOFTWARE\Smart-X\ControlUp\SBASettings\$Component)
     {
-        $result = Get-ItemPropertyValue -Path HKLM:\SOFTWARE\Smart-X\ControlUp\SBASettings\$Component -Name $Parameter
+        try {
+            $result = Get-ItemPropertyValue -Path HKLM:\SOFTWARE\Smart-X\ControlUp\SBASettings\$Component -Name $Parameter -ErrorAction Stop
+        }
+        catch {
+            $result = $null
+        }
     }
     else {
         $result = "There is no configuration item for $Component, you first need to create it using New-CUSBAConfigItem"
@@ -486,12 +492,13 @@ function New-CUServiceNowIncident()
     .MODIFICATION_HISTORY
         Samuel Legrand - 14/08/20 - Original code
         Samuel Legrand - 14/08/20 - Standardizing script, based on the ControlUp Scripting Standards (version 0.2)
+        Samuel Legrand - 02/09/20 - Add support for proxy
     .LINK
         
     .COMPONENT
         
     .NOTES
-        Version:        1.1
+        Version:        1.2
         Author:         Samuel Legrand
         Creation Date:  2020-08-14
         Updated:        2020-08-14
@@ -551,6 +558,8 @@ function New-CUServiceNowIncident()
     $credential = Get-CUSBAConfigItemCredentials -Component $Component -Parameter Credentials
     $user = $credential.GetNetworkCredential().username
     $pass = $credential.GetNetworkCredential().password
+    $Proxy = Get-CUSBAConfigItemValue -Component $Component -Parameter Proxy
+
     
     $JsonDescription = ($Description | Out-String | ConvertTo-Json)
     $body = "{ 'assignment_group':'$AssignmentGroup','short_description':'$ShortDescription', 'caller_id':'$CallerId', 'cmdb_ci':'$CmdbCi', 'description':$JsonDescription}"
@@ -587,7 +596,7 @@ function New-CUServiceNowIncident()
     [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
 
     # New API Call
-    $response = Invoke-RestMethod -Headers $headers -ContentType "application/json" -Method $method -Uri $uri -Body $body 
+    $response = Invoke-RestMethod -Headers $headers -ContentType "application/json" -Method $method -Uri $uri -Body $body -Proxy $Proxy
 
     return $response.result
 }
@@ -606,12 +615,13 @@ function New-CUSlackMessage()
     .MODIFICATION_HISTORY
         Samuel Legrand - 14/08/20 - Original code
         Samuel Legrand - 14/08/20 - Standardizing script, based on the ControlUp Scripting Standards (version 0.2)
+        Samuel Legrand - 02/09/20 - Add support for proxy
     .LINK
         
     .COMPONENT
         
     .NOTES
-        Version:        1.0
+        Version:        1.1
         Author:         Samuel Legrand
         Creation Date:  2020-08-14
         Updated:        2020-08-14
@@ -671,6 +681,7 @@ function New-CUSlackMessage()
         [string] $Button_Url
     )
     $WebhookUrl = Get-CUSBAConfigItemValue -component $Component -Parameter URL
+    $Proxy = Get-CUSBAConfigItemValue -Component $Component -Parameter Proxy
 
     $slackbody = @"
     {
@@ -718,7 +729,7 @@ function New-CUSlackMessage()
 "@
 
     # This section will send the API call using Powershell to Slack and Slack will process the request and send the notification
-    Invoke-RestMethod -uri $WebhookUrl -Method Post -body $slackbody -ContentType 'application/json'
+    Invoke-RestMethod -uri $WebhookUrl -Method Post -body $slackbody -ContentType 'application/json' -Proxy $Proxy
 }
 
 function New-CUTeamsMessage()
@@ -735,12 +746,13 @@ function New-CUTeamsMessage()
     .MODIFICATION_HISTORY
         Samuel Legrand - 14/08/20 - Original code
         Samuel Legrand - 14/08/20 - Standardizing script, based on the ControlUp Scripting Standards (version 0.2)
+        Samuel Legrand - 02/09/20 - Add support for proxy
     .LINK
         
     .COMPONENT
         
     .NOTES
-        Version:        1.0
+        Version:        1.1
         Author:         Samuel Legrand
         Creation Date:  2020-08-14
         Updated:        2020-08-14
@@ -785,6 +797,7 @@ function New-CUTeamsMessage()
         [string] $OpenUri
     )
     $TeamsIncomingWebhookUri = Get-CUSBAConfigItemValue -component $component -Parameter URL
+    $Proxy = Get-CUSBAConfigItemValue -Component $Component -Parameter Proxy
     $teamsbody = @"
     {
         "@type": "MessageCard",
@@ -808,7 +821,7 @@ function New-CUTeamsMessage()
     }
 "@
     # This section will send the API call using Powershell to Slack and Slack will process the request and send the notification
-    Invoke-RestMethod -uri $TeamsIncomingWebhookUri -Method Post -body $teamsbody -ContentType 'application/json'
+    Invoke-RestMethod -uri $TeamsIncomingWebhookUri -Method Post -body $teamsbody -ContentType 'application/json' -Proxy $Proxy
 
 }
 
