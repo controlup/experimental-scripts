@@ -26,14 +26,9 @@
             Position=0, 
             Mandatory=$false
         )]
-        [string] $ServerName = $ENV:COMPUTERNAME, 
-        [Parameter(
-            Position=1, 
-            Mandatory=$false
-        )]
         [int] $SessionID = [System.Diagnostics.Process]::GetCurrentProcess().SessionId, 
         [Parameter(
-            Position=2, 
+            Position=1, 
             Mandatory=$false
         )]
         [string] $UserName = $ENV:USERNAME
@@ -44,7 +39,7 @@ $SampleInterval = 10
 
 
 
-$Counters = Get-Counter -ComputerName $servername -Counter "\VMware Blast Session Counters(session id: $SessionID; (main))\Received Bytes","\VMware Blast Session Counters(session id: $SessionID; (main))\Transmitted Bytes","\VMware Blast Audio Counters(session id: $SessionID; Channel: Audio; (main))\Received Bytes","\VMware Blast Audio Counters(session id: $SessionID; Channel: Audio; (main))\Transmitted Bytes","\VMware Blast CDR Counters(session id: $SessionID; Channel: CDR; (main))\Received Bytes","\VMware Blast CDR Counters(session id: $SessionID; Channel: CDR; (main))\Transmitted Bytes","\VMware Blast Clipboard Counters(session id: $SessionID; Channel: Clipboard; (main))\Received Bytes","\VMware Blast Clipboard Counters(session id: $SessionID; Channel: Clipboard; (main))\Transmitted Bytes","\VMware Blast HTML5 MMR Counters(session id: $SessionID; Channel: HTML5MMR; (main))\Received Bytes","\VMware Blast HTML5 MMR Counters(session id: $SessionID; Channel: HTML5MMR; (main))\Transmitted Bytes","\VMware Blast Imaging Counters(session id: $SessionID; Channel: Imaging; (main))\Received Bytes","\VMware Blast Imaging Counters(session id: $SessionID; Channel: Imaging; (main))\Transmitted Bytes","\VMware Blast RTAV Counters(session id: $SessionID; Channel: RTAV; (main))\Received Bytes","\VMware Blast RTAV Counters(session id: $SessionID; Channel: RTAV; (main))\Transmitted Bytes","\VMware Blast Serial Port and Scanner Counters(session id: $SessionID; Channel: SerialPort-and-Scanner; (main))\Received Bytes","\VMware Blast Serial Port and Scanner Counters(session id: $SessionID; Channel: SerialPort-and-Scanner; (main))\Transmitted Bytes","\VMware Blast Session Counters(session id: $SessionID; (main))\Estimated Bandwidth (Uplink)","\VMware Blast Session Counters(session id: $SessionID; (main))\Jitter (Uplink)","\VMware Blast Session Counters(session id: $SessionID; (main))\Packet Loss (Uplink)","\VMware Blast Session Counters(session id: $SessionID; (main))\RTT" -SampleInterval $SampleInterval -MaxSamples $Samples
+$Counters = Get-Counter -Counter "\VMware Blast Session Counters(session id: $SessionID; (main))\Received Bytes","\VMware Blast Session Counters(session id: $SessionID; (main))\Transmitted Bytes","\VMware Blast Audio Counters(session id: $SessionID; Channel: Audio; (main))\Received Bytes","\VMware Blast Audio Counters(session id: $SessionID; Channel: Audio; (main))\Transmitted Bytes","\VMware Blast CDR Counters(session id: $SessionID; Channel: CDR; (main))\Received Bytes","\VMware Blast CDR Counters(session id: $SessionID; Channel: CDR; (main))\Transmitted Bytes","\VMware Blast Clipboard Counters(session id: $SessionID; Channel: Clipboard; (main))\Received Bytes","\VMware Blast Clipboard Counters(session id: $SessionID; Channel: Clipboard; (main))\Transmitted Bytes","\VMware Blast HTML5 MMR Counters(session id: $SessionID; Channel: HTML5MMR; (main))\Received Bytes","\VMware Blast HTML5 MMR Counters(session id: $SessionID; Channel: HTML5MMR; (main))\Transmitted Bytes","\VMware Blast Imaging Counters(session id: $SessionID; Channel: Imaging; (main))\Received Bytes","\VMware Blast Imaging Counters(session id: $SessionID; Channel: Imaging; (main))\Transmitted Bytes","\VMware Blast RTAV Counters(session id: $SessionID; Channel: RTAV; (main))\Received Bytes","\VMware Blast RTAV Counters(session id: $SessionID; Channel: RTAV; (main))\Transmitted Bytes","\VMware Blast Serial Port and Scanner Counters(session id: $SessionID; Channel: SerialPort-and-Scanner; (main))\Received Bytes","\VMware Blast Serial Port and Scanner Counters(session id: $SessionID; Channel: SerialPort-and-Scanner; (main))\Transmitted Bytes","\VMware Blast Session Counters(session id: $SessionID; (main))\Estimated Bandwidth (Uplink)","\VMware Blast Session Counters(session id: $SessionID; (main))\Jitter (Uplink)","\VMware Blast Session Counters(session id: $SessionID; (main))\Packet Loss (Uplink)","\VMware Blast Session Counters(session id: $SessionID; (main))\RTT" -SampleInterval $SampleInterval -MaxSamples $Samples
 $TotalReceived = ($Counters[1].CounterSamples[0].CookedValue - $Counters[0].CounterSamples[0].CookedValue)/1024
 $TotalSent = ($Counters[1].CounterSamples[1].CookedValue - $Counters[0].CounterSamples[1].CookedValue)/1024
 $AudioReceived = ($Counters[1].CounterSamples[2].CookedValue - $Counters[0].CounterSamples[2].CookedValue)/1024
