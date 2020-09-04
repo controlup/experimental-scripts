@@ -6,14 +6,13 @@
       This script measures the bandwidth of a given active VMware Horizon Blast session, and breaks down the bandwidth consumption into the most useable Blast virtual channels.
       The output shows the bandwidth usage in kbps (kilobits per second) of each virtual channel and the total session.
 .PARAMETER 
-      This script has 3 parameters:
-      ServerName - The target server that the script should run on.
+      This script has 2 parameters:
       Session ID - The session ID of the session
       UserName - The UserName of the session. 
 .EXAMPLE
-        In order to analyze a session remotely (needs some rights)
-        ./"Analyze Blast Bandwidth.ps1" "HZNDESKPOOL1-001" "1" "controlup\samuel.legrand" 
-        In order to analyze the current session (no specific right needed)
+        If you want to specify the username and the session id:
+        ./"Analyze Blast Bandwidth.ps1" "1" "controlup\samuel.legrand" 
+        In order to analyze the current session (no specific right needed): 
         ./"Analyze Blast Bandwidth.ps1" 
 .OUTPUTS
         A list of the measured virtual channels with the bandwidth consumption in kbps.
