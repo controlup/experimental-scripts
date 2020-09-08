@@ -556,20 +556,11 @@ function New-CUServiceNowIncident()
     )
     $fqdn = Get-CUSBAConfigItemValue -component $Component -Parameter FQDN
     $credential = Get-CUSBAConfigItemCredentials -Component $Component -Parameter Credentials
-    $user = $credential.GetNetworkCredential().username
-    $pass = $credential.GetNetworkCredential().password
     $Proxy = Get-CUSBAConfigItemValue -Component $Component -Parameter Proxy
 
     
     $JsonDescription = ($Description | Out-String | ConvertTo-Json)
     $body = "{ 'assignment_group':'$AssignmentGroup','short_description':'$ShortDescription', 'caller_id':'$CallerId', 'cmdb_ci':'$CmdbCi', 'description':$JsonDescription}"
-    
-    # Build auth header
-        $base64AuthInfo = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(("{0}:{1}" -f $user, $pass)))
-
-    # Set proper headers
-        $headers = New-Object "System.Collections.Generic.Dictionary[[String],[String]]"
-        $headers.Add('Authorization',('Basic {0}' -f $base64AuthInfo))
     
     # Specify endpoint uri
         $uri = "https://$fqdn/api/now/table/incident"
@@ -596,8 +587,7 @@ function New-CUServiceNowIncident()
     [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
 
     # New API Call
-    $response = Invoke-RestMethod -Headers $headers -ContentType "application/json" -Method $method -Uri $uri -Body $body -Proxy $Proxy
-
+    $response = Invoke-RestMethod -ContentType "application/json" -Method $method -Uri $uri -Body $body -Proxy $Proxy -Credential $credential
     return $response.result
 }
 
