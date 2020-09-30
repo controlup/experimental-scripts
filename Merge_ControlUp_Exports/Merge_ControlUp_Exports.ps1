@@ -37,7 +37,7 @@
             $DateHour = "$($Temp[2])_$($Temp[3])_$($Temp[4])_$($Temp[5])_$($Temp[6])_$($Temp[7])"
             $DestFileName = "$($DestFolder)\$($Date)_$($Reportname).csv"
             Get-Content $ExportFile.FullName| Select-Object -Skip 1 | ConvertFrom-Csv -Delimiter "," | Select-Object *,@{Name='ExtractTime';Expression={$DateHour}} | Export-Csv $DestFileName -NoTypeInformation -Append
-            
+            Rename-Item $ExportFile.FullName "$($ExportFile).FullName.old"
         }
 
     }
