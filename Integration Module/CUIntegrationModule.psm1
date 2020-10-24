@@ -13,10 +13,13 @@
     Samuel Legrand - 18/08/20 - Remove debug output on New-CUTeamsMessage
     Samuel Legrand - 19/08/20 - Update the password management for Component and change it for New-CUServiceNowIncident
     Samuel Legrand - 02/09/20 - Add Support for proxy settings for Slack, Teams and ServiceNow integrations
+    Samuel Legrand - 14/10/20 - New function - Push-CUDataToSQL
+    Samuel Legrand - 24/10/20 - New function - Install-CUIntegrationModule
 .LINK
     
 .COMPONENT
     Technical functions (Needed for the configuration of the PowerShell module:
+        Install-CUIntegrationModule - This function install the ControlUp integration module
         New-CUSBAConfigItem - This function creates a ConfigItem in order to store configuration for a "Component"
         Get-CUSBAConfigItem - This function return the stored configuration for a "Component"
         Remove-CUSBAConfigItem - This function removes a ConfigItem (and all the configuration for a "Component")
@@ -30,6 +33,7 @@
         New-CUServiceNowIncident - This function creates a Service Now Incident
         New-CUSlackMessage - This function creates a Slack message
         New-CUTeamsMessage - This function creates a Teams message
+        Push-CUDataToSQL - This function push ControlUp data to a SQL Database
 
 .NOTES
     Version:        1.2
@@ -43,6 +47,46 @@
         
     Copyright (c) All rights reserved.
 #>
+
+function Install-CUIntegrationModule()
+{
+    <#
+    .SYNOPSIS
+        Install the ControlUp Integration Module
+    .DESCRIPTION
+        Install the ControlUp Inegration Module
+    .CONTEXT
+        ControlUp Monitor Server
+    .EXAMPLE
+        Install-CUIntegrationModule
+    .MODIFICATION_HISTORY
+        Samuel Legrand - 24/10/20 - Original code
+    .LINK
+        
+    .COMPONENT
+        
+    .NOTES
+        Version:        1.0
+        Author:         Samuel Legrand
+        Creation Date:  2020-10-24
+        Updated:        
+
+        Purpose:        Script Based Action, created for ControlUp Monitoring
+            
+        Copyright (c) All rights reserved.
+    #>
+    if (-not(Test-Path HKLM:\SOFTWARE\Smart-X\ControlUp\SBASettings))
+    {
+        New-Item -Path HKLM:\SOFTWARE\Smart-X\ControlUp\SBASettings
+        New-CUSBAConfigItem -Component ".ConfigInfo"
+        Set-CUSBAConfigItemValue -Component ".ConfigInfo" -Parameter "Location" -Value $PSCommandPath
+        $result = "ControlUp Intregration Module installed!"
+    }
+    else {
+        $result = "There is already a installed ControlUp Integration Module"
+    }
+    return $result
+}
 
 function New-CUSBAConfigItem()
 {
@@ -815,3 +859,78 @@ function New-CUTeamsMessage()
 
 }
 
+function Push-CUDataToSQL()
+{   
+    <#
+    .SYNOPSIS
+        Send ControlUp Data to a SQL database
+    .DESCRIPTION
+        Send ControlUp Data to a SQL database
+    .CONTEXT
+        ControlUp Monitor Server
+    .EXAMPLE
+        Push-CUDataToSQL -component SQL -Data "10.5,iexplore.exe,legsam"
+    .MODIFICATION_HISTORY
+        Samuel Legrand - 14/10/20 - Original code
+    .LINK
+        
+    .COMPONENT
+        
+    .NOTES
+        Version:        1.0
+        Author:         Samuel Legrand
+        Creation Date:  2020-10-14
+        Updated:        
+                        
+        Purpose:        Script Based Action, created for ControlUp Monitoring
+            
+        Copyright (c) All rights reserved.
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(
+            Position=0, 
+            Mandatory=$true, 
+            HelpMessage='Enter the name of the component you want to use'
+        )]
+        [ValidateNotNullOrEmpty()]
+        [string] $component,
+        [Parameter(
+            Position=1, 
+            Mandatory=$true, 
+            HelpMessage='Enter the data to be send (separated by a comma)'
+        )]
+        [ValidateNotNullOrEmpty()]
+        [string] $data
+    )
+    $SQLServer = Get-CUSBAConfigItemValue -component $component -Parameter ServerName
+    $SQLDataBase = Get-CUSBAConfigItemValue -component $component -Parameter DataBase
+    $SQLTable = Get-CUSBAConfigItemValue -Component $component -Parameter Table
+    $SQLColumns = Get-CUSBAConfigItemValue -Component $component -Parameter Columns
+    $SQLDatasSplit = $data.split(",")
+    $SQLColumnsSplit = $SQLColumns.split(",")
+    if ($SQLDatasSplit.Count -ne $SQLColumnsSplit.Count){
+        Write-Error "ERROR - You should have sent $($SQLColumnsSplit.Count) and you sent $($SQLDatasSplit.Count)"
+    }
+
+    $credential = Get-CUSBAConfigItemCredentials -Component $Component -Parameter Credentials
+    $credential.Password.MakeReadOnly()
+
+    $SQLCred = New-Object System.Data.SqlClient.SqlCredential($credential.username,$credential.password)    
+    $InsertCommand = "INSERT INTO $SQLTable ($SQLColumns) VALUES ($SQLDatas)"
+
+    #Connects to Database
+    $connection = New-Object System.Data.SqlClient.SqlConnection
+    $connection.ConnectionString = "Data Source=$SQLServer;Initial Catalog=$SQLDataBase"
+    $connection.Credential = $SQLCred
+    $connection.Open()
+    
+    #Inserts information to the DB
+    $cmd = New-Object System.Data.SqlClient.SqlCommand
+    $cmd.connection = $connection
+    $cmd.CommandText = $InsertCommand
+    $cmd.ExecuteNonQuery()
+    
+    #Closes Connection
+    $connection.Close() 
+}
