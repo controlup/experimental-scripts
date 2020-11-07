@@ -15,6 +15,7 @@
     Samuel Legrand - 02/09/20 - Add Support for proxy settings for Slack, Teams and ServiceNow integrations
     Samuel Legrand - 14/10/20 - New function - Push-CUDataToSQL
     Samuel Legrand - 24/10/20 - New function - Install-CUIntegrationModule
+    Samuel Legrand - 07/11/20 - Allow SQL and Windows Authentication for Push-CUDatatoSQL
 .LINK
     
 .COMPONENT
@@ -907,30 +908,57 @@ function Push-CUDataToSQL()
     $SQLDataBase = Get-CUSBAConfigItemValue -component $component -Parameter DataBase
     $SQLTable = Get-CUSBAConfigItemValue -Component $component -Parameter Table
     $SQLColumns = Get-CUSBAConfigItemValue -Component $component -Parameter Columns
+    $SQLAuth = Get-CUSBAConfigItemValue -Component $component -Parameter AuthenticationMode
+
+
+
+    if ($SQLAuth -notin "SQL","Windows"){
+        Write-Error "SQL Authentication mode not define for $Component" -ErrorAction Stop
+    }
+        
     $SQLDatasSplit = $data.split(",")
     $SQLColumnsSplit = $SQLColumns.split(",")
     if ($SQLDatasSplit.Count -ne $SQLColumnsSplit.Count){
-        Write-Error "ERROR - You should have sent $($SQLColumnsSplit.Count) and you sent $($SQLDatasSplit.Count)"
+        Write-Error "ERROR - You should have sent $($SQLColumnsSplit.Count) and you sent $($SQLDatasSplit.Count)" -ErrorAction Stop
     }
 
-    $credential = Get-CUSBAConfigItemCredentials -Component $Component -Parameter Credentials
-    $credential.Password.MakeReadOnly()
+    if ($SQLAuth -eq "SQL"){
+        $credential = Get-CUSBAConfigItemCredentials -Component $Component -Parameter Credentials
+        $credential.Password.MakeReadOnly()
 
-    $SQLCred = New-Object System.Data.SqlClient.SqlCredential($credential.username,$credential.password)    
-    $InsertCommand = "INSERT INTO $SQLTable ($SQLColumns) VALUES ($SQLDatas)"
+        $SQLCred = New-Object System.Data.SqlClient.SqlCredential($credential.username,$credential.password)    
+        $InsertCommand = "INSERT INTO $SQLTable ($SQLColumns) VALUES ($data)"
 
-    #Connects to Database
-    $connection = New-Object System.Data.SqlClient.SqlConnection
-    $connection.ConnectionString = "Data Source=$SQLServer;Initial Catalog=$SQLDataBase"
-    $connection.Credential = $SQLCred
-    $connection.Open()
-    
-    #Inserts information to the DB
-    $cmd = New-Object System.Data.SqlClient.SqlCommand
-    $cmd.connection = $connection
-    $cmd.CommandText = $InsertCommand
-    $cmd.ExecuteNonQuery()
-    
-    #Closes Connection
-    $connection.Close() 
+        #Connects to Database
+        $connection = New-Object System.Data.SqlClient.SqlConnection
+        $connection.ConnectionString = "Data Source=$SQLServer;Initial Catalog=$SQLDataBase"
+        $connection.Credential = $SQLCred
+        $connection.Open()
+        
+        #Inserts information to the DB
+        $cmd = New-Object System.Data.SqlClient.SqlCommand
+        $cmd.connection = $connection
+        $cmd.CommandText = $InsertCommand
+        $cmd.ExecuteNonQuery()
+        
+        #Closes Connection
+        $connection.Close() 
+    }
+    else {
+        $InsertCommand = "INSERT INTO $SQLTable ($SQLColumns) VALUES ($data)"
+
+        #Connects to Database
+        $connection = New-Object System.Data.SqlClient.SqlConnection
+        $connection.ConnectionString = "Data Source=$SQLServer;Initial Catalog=$SQLDataBase;trusted_connection=true"
+        $connection.Open()
+        
+        #Inserts information to the DB
+        $cmd = New-Object System.Data.SqlClient.SqlCommand
+        $cmd.connection = $connection
+        $cmd.CommandText = $InsertCommand
+        $cmd.ExecuteNonQuery()
+        
+        #Closes Connection
+        $connection.Close() 
+    }
 }
