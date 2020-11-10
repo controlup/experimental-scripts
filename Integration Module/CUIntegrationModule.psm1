@@ -16,6 +16,7 @@
     Samuel Legrand - 14/10/20 - New function - Push-CUDataToSQL
     Samuel Legrand - 24/10/20 - New function - Install-CUIntegrationModule
     Samuel Legrand - 07/11/20 - Allow SQL and Windows Authentication for Push-CUDatatoSQL
+    Samuel Legrand - 11/11/20 - New function - New-CUSQLTable
 .LINK
     
 .COMPONENT
@@ -29,6 +30,7 @@
         Get-CUSBAConfigItemValue - This function returns the value of a parameter for a specific "Component"
         Get-CUSBAConfigItemCredentials - This function returns the Credentials for a specific "Component"
         Set-CUSBAConfigItemCredentials - This function sets the Credentials for a specific "Component"
+        New-CUSQLTable - This function create a component for a SQL Table in order to be used by the integration module
         
     Integration functions (Used to integrate with other solutions)
         New-CUServiceNowIncident - This function creates a Service Now Incident
@@ -422,6 +424,7 @@ function Set-CUSBAConfigItemCredentials()
         Set-CUSBAConfigItemCredentials -Component ServiceNow -Parameter Credentials
     .MODIFICATION_HISTORY
         Samuel Legrand - 19/08/20 - Original code
+        Samuel Legrand - 07/11/20 - Add parameter to allow to use a PSCredential object 
     .LINK
         
     .COMPONENT
@@ -451,11 +454,20 @@ function Set-CUSBAConfigItemCredentials()
             HelpMessage='Enter the name of the parameter'
         )]
         [ValidateNotNullOrEmpty()]
-        [string] $Parameter
+        [string] $Parameter,
+        [Parameter(
+            Position=2, 
+            Mandatory=$false, 
+            HelpMessage='PSCredential object'
+        )]
+        [ValidateNotNullOrEmpty()]
+        [PSCredential] $PSCred
     )
     if (Test-Path HKLM:\SOFTWARE\Smart-X\ControlUp\SBASettings\$Component)
     {
-        $PSCred = Get-Credential
+        if ($null -eq $PSCred) {
+            $PSCred = Get-Credential
+        }
         $PSCred | Export-Clixml -Path $ENV:TEMP\temp.xml
         $Value = [Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes($(get-content $ENV:TEMP\temp.xml)))
         $result = Set-ItemProperty -Path HKLM:\SOFTWARE\Smart-X\ControlUp\SBASettings\$Component -Name $Parameter -Value $Value
@@ -960,5 +972,114 @@ function Push-CUDataToSQL()
         
         #Closes Connection
         $connection.Close() 
+    }
+}
+
+function New-CUSQLTable()
+{   
+    <#
+    .SYNOPSIS
+        This function create a component for a SQL Table in order to be used by the integration module
+    .DESCRIPTION
+        This function create a component for a SQL Table in order to be used by the integration module
+    .CONTEXT
+        ControlUp Monitor Server
+    .EXAMPLE
+        Push-CUDataToSQL -component SQL -Data "10.5,iexplore.exe,legsam"
+    .MODIFICATION_HISTORY
+        Samuel Legrand - 14/10/20 - Original code
+    .LINK
+        
+    .COMPONENT
+        
+    .NOTES
+        Version:        1.0
+        Author:         Samuel Legrand
+        Creation Date:  2020-10-14
+        Updated:        
+                        
+        Purpose:        Script Based Action, created for ControlUp Monitoring
+            
+        Copyright (c) All rights reserved.
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(
+            Position=0, 
+            Mandatory=$true, 
+            HelpMessage='Enter the name of the component you want to create'
+        )]
+        [ValidateNotNullOrEmpty()]
+        [string] $component,
+        [Parameter(
+            Position=1, 
+            Mandatory=$true, 
+            HelpMessage='Enter the name of the instance ("SQLSERVER\Instance,Port" or "SQLServer\Instance" for example)'
+        )]
+        [ValidateNotNullOrEmpty()]
+        [string] $SQLServer,
+        [Parameter(
+            Position=2, 
+            Mandatory=$true, 
+            HelpMessage='Enter the name of the SQL database'
+        )]
+        [ValidateNotNullOrEmpty()]
+        [string] $SQLDataBase,
+        [Parameter(
+            Position=3, 
+            Mandatory=$true, 
+            HelpMessage='Enter the name of the SQL table'
+        )]
+        [ValidateNotNullOrEmpty()]
+        [string] $SQLTable,
+        [Parameter(
+            Position=4, 
+            Mandatory=$true, 
+            HelpMessage='Enter the SQL Authentication Method (SQL or Windows)'
+        )]
+        [ValidateSet("SQL","Windows")]
+        [string] $SQLAuth
+    )
+    $SQLCommand = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '$SQLTable'"
+    #Connects to Database
+    $connection = New-Object System.Data.SqlClient.SqlConnection
+
+    if ($SQLAuth -eq "SQL"){
+        $credentials = Get-Credential
+        $credentials.Password.MakeReadOnly()
+        $SQLCred = New-Object System.Data.SqlClient.SqlCredential($credentials.username,$credentials.password)
+        $connection.ConnectionString = "Data Source=$SQLServer;Initial Catalog=$SQLDataBase"
+        $connection.Credential = $SQLCred
+    }
+    else{
+        $connection.ConnectionString = "Data Source=$SQLServer;Initial Catalog=$SQLDataBase;trusted_connection=true"
+    }
+    $connection.Open()
+
+    $cmd = New-Object System.Data.SqlClient.SqlCommand
+    $cmd.connection = $connection
+    $cmd.CommandText = $SQLCommand
+    $SQLColumns = ""
+    $rdr = $cmd.ExecuteReader()
+    while ($rdr.Read()){
+        $SQLColumns += "[$($rdr[0])],"
+    }
+    $rdr.Close()
+    $connection.Close() 
+    if ($SQLColumns -ne ""){
+        $SQLColumns=$SQLColumns.Substring(0,$SQLColumns.Length - 1)
+    }
+    else 
+    {
+        Write-Error "Table $SQLTable is empty or not existing" -ErrorAction Stop
+    }
+    New-CUSBAConfigItem -Component $component
+    Set-CUSBAConfigItemValue -Component $component -Parameter ServerName -Value $SQLServer
+    Set-CUSBAConfigItemValue -Component $component -Parameter DataBase -Value $SQLDataBase
+    Set-CUSBAConfigItemValue -Component $component -Parameter Table -Value "[$SQLTable]"
+    Set-CUSBAConfigItemValue -Component $component -Parameter AuthenticationMode -Value $SQLAuth
+    Set-CUSBAConfigItemValue -Component $component -Parameter Columns -Value $SQLColumns
+    if ($SQLAuth -eq "SQL") {
+        Set-CUSBAConfigItemCredentials -Component $component -Parameter Credentials -PSCred $credentials
     }
 }
