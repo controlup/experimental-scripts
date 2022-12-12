@@ -2,10 +2,10 @@ function Send-SlackMessage {
     param(
         $message
     )
-    $webhookURL = "https://hooks.slack.com/services/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"
+    $webhookURL = "<URL>"
 
     # Webhooks Channel
-    $ChannelName = "#cuemea-status-and-messages"
+    $ChannelName = "#<CHANNEL>"
 
     $BodyTemplate = @"
     {
