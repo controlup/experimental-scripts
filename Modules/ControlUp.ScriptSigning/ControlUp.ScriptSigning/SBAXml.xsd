@@ -1,0 +1,133 @@
+<xs:schema attributeFormDefault="unqualified" elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="ArrayOfSBADescriptor">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="SBADescriptor">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element type="xs:string" name="SBAId"/>
+              <xs:element type="xs:string" name="RootSBAId"/>
+              <xs:element type="xs:string" name="StoreId"/>
+              <xs:element type="xs:long" name="SQN"/>
+              <xs:element type="xs:string" name="Name"/>
+              <xs:element type="xs:string" name="Description"/>
+              <xs:element type="xs:string" name="ActionCategory" minOccurs="0"/>
+              <xs:element type="xs:string" name="Category" minOccurs="0"/>
+              <xs:element type="xs:string" name="Version"/>
+              <xs:element type="xs:dateTime" name="DateCreated"/>
+              <xs:element type="xs:dateTime" name="DateModified"/>
+              <xs:element type="xs:dateTime" name="DatePublished"/>
+              <xs:element type="xs:string" name="LastEditorName"/>
+              <xs:element type="xs:string" name="CreatorName"/>
+              <xs:element type="xs:byte" name="Status"/>
+              <xs:element type="xs:string" name="CheckSum"/>
+              <xs:element type="xs:string" name="EULAVersion" minOccurs="0"/>
+              <xs:element type="xs:string" name="DenyCommunityShare" minOccurs="0"/>
+              <xs:element name="Icon" minOccurs="0">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element type="xs:string" name="IconData"/>
+                    <xs:element type="xs:byte" name="IconType"/>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+              <xs:element name="ShareDescriptor">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element type="xs:string" name="Author" minOccurs="0"/>
+                    <xs:element type="xs:string" name="Tags" minOccurs="0"/>
+                    <xs:element type="xs:string" name="Credits" minOccurs="0"/>
+                    <xs:element type="xs:string" name="AllowExposeEmail" minOccurs="0"/>
+                    <xs:element type="xs:string" name="ContactEmail" minOccurs="0"/>
+                    <xs:element type="xs:string" name="Notes" minOccurs="0"/>
+                    <xs:element type="xs:long" name="DownloadCount" minOccurs="0"/>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+              <xs:element name="ExecutionDescriptor">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element type="xs:long" name="AllowedEntitiesEx"/>
+                    <xs:element type="xs:long" name="AtomicEntityEx"/>
+                    <xs:element type="xs:long" name="AllowedEntities"/>
+                    <xs:element type="xs:long" name="AtomicEntity"/>
+                    <xs:element type="xs:string" name="ScriptData"/>
+                    <xs:element type="xs:string" name="IsCompressed"/>
+                    <xs:element type="xs:string" name="Interactive"/>
+                    <xs:element type="xs:byte" name="AltCredentialsType"/>
+                    <xs:element type="xs:short" name="Timeout"/>
+                    <xs:element type="xs:byte" name="ScriptType"/>
+                    <xs:element type="xs:byte" name="TimeoutPolicy"/>
+                    <xs:element type="xs:byte" name="ConcurrencyMode"/>
+                    <xs:element type="xs:byte" name="ExecutionContext"/>
+                    <xs:element name="Arguments" minOccurs="0">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element name="inner">
+                            <xs:complexType>
+                              <xs:sequence>
+                                <xs:element name="sxSerializedDictionaryOfStringSBAArgumentDescriptor">
+                                  <xs:complexType>
+                                    <xs:sequence>
+                                      <xs:element name="item" maxOccurs="unbounded" minOccurs="0">
+                                        <xs:complexType>
+                                          <xs:sequence>
+                                            <xs:element name="key">
+                                              <xs:complexType>
+                                                <xs:sequence>
+                                                  <xs:element type="xs:string" name="string"/>
+                                                </xs:sequence>
+                                              </xs:complexType>
+                                            </xs:element>
+                                            <xs:element name="value">
+                                              <xs:complexType>
+                                                <xs:sequence>
+                                                  <xs:element name="SBAArgumentDescriptor">
+                                                    <xs:complexType>
+                                                      <xs:sequence>
+                                                        <xs:element type="xs:string" name="ArgumentId"/>
+                                                        <xs:element type="xs:byte" name="ArgumentType"/>
+                                                        <xs:element type="xs:string" name="Name" minOccurs="0"/>
+                                                        <xs:element type="xs:string" name="DefaultValue" minOccurs="0"/>
+                                                        <xs:element type="xs:byte" name="ArgumentNumber" minOccurs="0"/>
+                                                        <xs:element type="xs:string" name="ArgumentName" minOccurs="0"/>
+                                                        <xs:element type="xs:byte" name="EmptyBehavior" minOccurs="0"/>
+                                                        <xs:element type="xs:string" name="ValidationString" minOccurs="0"/>
+                                                        <xs:element type="xs:string" name="ValidationError" minOccurs="0"/>
+                                                        <xs:element type="xs:string" name="MaskTypedCharacters" minOccurs="0"/>
+                                                        <xs:element type="xs:long" name="EntityType" minOccurs="0"/>
+                                                      </xs:sequence>
+                                                    </xs:complexType>
+                                                  </xs:element>
+                                                </xs:sequence>
+                                              </xs:complexType>
+                                            </xs:element>
+                                          </xs:sequence>
+                                        </xs:complexType>
+                                      </xs:element>
+                                    </xs:sequence>
+                                  </xs:complexType>
+                                </xs:element>
+                              </xs:sequence>
+                            </xs:complexType>
+                          </xs:element>
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
+                    <xs:element type="xs:string" name="InstructionsExecutionOnComputer"/>
+                    <xs:element type="xs:string" name="SupressOutputDialog"/>
+                    <xs:element type="xs:string" name="UseSdk"/>
+                    <xs:element type="xs:string" name="DefaultSharedCredGuid" minOccurs="0"/>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+              <xs:element type="xs:string" name="MissingCred"/>
+              <xs:element type="xs:string" name="ImportValidationString"/>
+              <xs:element type="xs:string" name="IsVersionAudited"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>
